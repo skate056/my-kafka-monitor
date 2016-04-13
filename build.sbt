@@ -27,3 +27,5 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "1.10.19" % "test",
   "com.yammer.metrics" % "metrics-core" % "2.2.0" force()
 )
+
+assemblyJarName in assembly := s"${name.value}.jar"
