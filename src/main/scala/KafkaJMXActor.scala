@@ -1,30 +1,63 @@
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import jmx.{KafkaJMX, KafkaMetrics, MeterMetric}
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
-case class FetchStats(topicName: String)
+case class FetchStats(topicName: Option[String])
 
-case class TopicStatsSucces(topicName: String, meterMetric: MeterMetric)
+case class TopicStatsSuccess(topicName: Option[String], meterMetric: MeterMetric)
 
-case class TopicStatsFailure(topicName: String, th: Throwable)
+case class TopicStatsFailure(topicName: Option[String], th: Throwable)
 
-class KafkaJMXActor(host: String, port: Int) extends Actor {
+class KafkaJMXActor(hosts: Seq[String], port: Int) extends Actor with ActorLogging {
   val version = model.Kafka_0_9_0_0
+
+  log.debug(s"Setup with $hosts and $port")
 
   override def receive: Receive = {
     case FetchStats(topicName) =>
-      val result = KafkaJMX.doWithConnection(host, port, None, None) {
-        mbsc => KafkaMetrics.getMessagesInPerSec(version, mbsc, Option(topicName))
+      val results = hosts.map { host =>
+        KafkaJMX.doWithConnection(host, port, None, None) {
+          mbsc => KafkaMetrics.getMessagesInPerSec(version, mbsc, topicName)
+        }
       }
 
-      result match {
-        case Success(mm) =>
-          val ts = TopicStatsSucces(topicName, mm)
-          sender() ! ts
-        case Failure(th) =>
-          val tf = TopicStatsFailure(topicName, th)
-          sender() ! tf
+      val mergedMetrics = mergeResults(results)
+      mergedMetrics match {
+        case Left(mm) => sender() ! TopicStatsSuccess(topicName, mm)
+        case Right(th) => sender() ! TopicStatsFailure(topicName, th)
       }
+  }
+
+  def mergeResults(results: Seq[Try[MeterMetric]]): Either[MeterMetric, Throwable] = {
+    val ZERO: Either[MeterMetric, Throwable] = Left(MeterMetric(0, 0, 0, 0, 0))
+    val mergedMetrics: Either[MeterMetric, Throwable] = results.foldLeft(ZERO) {
+      //case (result, current) =>
+      case (result@Right(_), _) => result
+      case (result, Success(mm)) => result.left.map(add(_, mm))
+      case (result, Failure(th)) => Right(th)
+      //        if (result.isRight)
+      //          result
+      //        else {
+      //          current match {
+      //            case Success(mm) =>
+      //              result.left.map(add(_, mm))
+      //            case Failure(th) =>
+      //              Right(th)
+      //          }
+      //        }
+    }
+    //              val ts = TopicStatsSucces(topicName, mm)
+    //              val tf = TopicStatsFailure(topicName, th)
+    mergedMetrics
+  }
+
+  def add(a: MeterMetric, b: MeterMetric): MeterMetric = {
+    MeterMetric(
+      a.count + b.count,
+      a.fifteenMinuteRate + b.fifteenMinuteRate,
+      a.fiveMinuteRate + b.fiveMinuteRate,
+      a.oneMinuteRate + b.oneMinuteRate,
+      a.meanRate + b.meanRate)
   }
 }
