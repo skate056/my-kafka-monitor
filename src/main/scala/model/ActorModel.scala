@@ -5,13 +5,13 @@
 
 package model
 
+import java.time.OffsetDateTime
 import java.util.Properties
 import jmx._
 
 import grizzled.slf4j.Logging
 import jmx.{LogInfo, SegmentsMetric, OSMetric, MeterMetric}
 import kafka.common.TopicAndPartition
-import org.joda.time.DateTime
 
 import scala.collection.immutable.Queue
 import scala.concurrent.duration.Duration
@@ -200,13 +200,13 @@ object ActorModel {
 
   case class BrokerList(list: IndexedSeq[BrokerIdentity], clusterContext: ClusterContext) extends QueryResponse
 
-  case class PreferredReplicaElection(startTime: DateTime, 
-                                      topicAndPartition: Set[TopicAndPartition], 
-                                      endTime: Option[DateTime], 
+  case class PreferredReplicaElection(startTime: OffsetDateTime,
+                                      topicAndPartition: Set[TopicAndPartition],
+                                      endTime: Option[OffsetDateTime],
                                       clusterContext: ClusterContext) extends QueryResponse
-  case class ReassignPartitions(startTime: DateTime, 
+  case class ReassignPartitions(startTime: OffsetDateTime,
                                 partitionsToBeReassigned: Map[TopicAndPartition, Seq[Int]], 
-                                endTime: Option[DateTime], 
+                                endTime: Option[OffsetDateTime],
                                 clusterContext: ClusterContext) extends QueryResponse
 
   case class ConsumedTopicDescription(consumer: String,
@@ -570,7 +570,7 @@ object ActorModel {
 
   }
 
-  case class BrokerMessagesPerSecCount(date: DateTime,
+  case class BrokerMessagesPerSecCount(date: OffsetDateTime,
                                        count: Long)
 
   case class BrokerMetrics(bytesInPerSec: MeterMetric,
