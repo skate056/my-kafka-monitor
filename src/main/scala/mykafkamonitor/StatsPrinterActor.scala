@@ -1,11 +1,13 @@
+package mykafkamonitor
+
 import java.time.LocalDateTime
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 
 import akka.actor.Actor
-import jmx.MeterMetric
+import km.jmx.MeterMetric
 
-class StatsPrinter extends Actor {
+class StatsPrinterActor extends Actor {
   val delimiter = "\t"
 
   val formatter = DateTimeFormatter.ISO_DATE_TIME

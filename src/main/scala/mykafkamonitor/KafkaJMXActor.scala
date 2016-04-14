@@ -1,5 +1,7 @@
+package mykafkamonitor
+
 import akka.actor.{Actor, ActorLogging}
-import jmx.{KafkaJMX, KafkaMetrics, MeterMetric}
+import km.jmx.{KafkaMetrics, KafkaJMX, MeterMetric}
 
 import scala.util.{Failure, Success, Try}
 
@@ -10,7 +12,7 @@ case class TopicStatsSuccess(topicName: Option[String], meterMetric: MeterMetric
 case class TopicStatsFailure(topicName: Option[String], th: Throwable)
 
 class KafkaJMXActor(hosts: Seq[String], port: Int) extends Actor with ActorLogging {
-  val version = model.Kafka_0_9_0_0
+  val version = km.model.Kafka_0_9_0_0
 
   log.debug(s"Setup with $hosts and $port")
 

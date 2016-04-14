@@ -1,4 +1,4 @@
-package jmx
+package km.jmx
 
 /**
  * Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
@@ -12,8 +12,8 @@ import javax.management.remote.{JMXConnector, JMXConnectorFactory, JMXServiceURL
 
 import com.yammer.metrics.reporting.JmxReporter.GaugeMBean
 import grizzled.slf4j.Logging
-import model.ActorModel.BrokerMetrics
-import model.{KafkaVersion, _}
+import km.model.ActorModel.BrokerMetrics
+import km.model.{KafkaVersion, _}
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
@@ -95,7 +95,7 @@ object KafkaMetrics {
   
   private def getSep(kafkaVersion: KafkaVersion) : String = {
     kafkaVersion match {
-      case model.Kafka_0_8_1_1 => "\""
+      case km.model.Kafka_0_8_1_1 => "\""
       case _ => ""
     }
   }

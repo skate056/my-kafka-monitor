@@ -1,3 +1,5 @@
+package mykafkamonitor
+
 import akka.actor.{Actor, ActorLogging}
 import kafka.utils.ZkUtils
 import org.apache.kafka.common.protocol.SecurityProtocol

@@ -3,14 +3,14 @@
  * See accompanying LICENSE file.
  */
 
-package model
+package km.model
 
 import java.time.OffsetDateTime
 import java.util.Properties
-import jmx._
+import km.jmx._
 
 import grizzled.slf4j.Logging
-import jmx.{LogInfo, SegmentsMetric, OSMetric, MeterMetric}
+import km.jmx.{LogInfo, SegmentsMetric, OSMetric, MeterMetric}
 import kafka.common.TopicAndPartition
 
 import scala.collection.immutable.Queue

@@ -1,4 +1,5 @@
 import akka.actor.{ActorSystem, Props}
+import mykafkamonitor.{InitMonitor, KafkaMonitorActor}
 
 object MonitorApp {
   def main(args: Array[String]) {

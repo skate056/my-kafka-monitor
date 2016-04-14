@@ -1,4 +1,4 @@
-package model
+package km.model
 
 /**
  * Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
@@ -7,7 +7,7 @@ package model
 
 import java.nio.charset.StandardCharsets
 
-import cluster.ClusterFeatures
+import km.cluster.ClusterFeatures
 
 import scala.util.Try
 import scala.util.matching.Regex

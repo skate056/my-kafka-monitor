@@ -1,10 +1,8 @@
-import java.time.LocalDateTime
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.temporal.ChronoField._
+package mykafkamonitor
+
 import java.util.concurrent.TimeUnit.SECONDS
 
-import akka.actor.{ActorLogging, Actor, ActorRef, Props}
-import jmx.MeterMetric
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
@@ -23,18 +21,18 @@ class KafkaMonitorActor(zookeeperUrl: String, port: Int, topicName: Option[Strin
   val clusterActor = context.actorOf(clusterProps)
 
   var jmxActor: ActorRef = null
-  var printer: ActorRef = context.actorOf(Props[StatsPrinter])
+  var printer: ActorRef = context.actorOf(Props[StatsPrinterActor])
 
   override def receive: Receive = {
     case InitMonitor =>
-      log("Fetching broker list")
+      logDebug("Fetching broker list")
       clusterActor ! GetBrokerList
     case BrokerList(brokers) =>
-      log(s"Brokers are: $brokers")
+      logDebug(s"Brokers are: $brokers")
       val jmxProps = Props(classOf[KafkaJMXActor], brokers, port)
       jmxActor = context.actorOf(jmxProps)
 
-      log(s"Setting up with $brokers:$port for topic $topicName")
+      logDebug(s"Setting up with $brokers:$port for topic $topicName")
       context.system.scheduler.schedule(oneSec, oneSec) {
         self ! RefreshStats
       }
@@ -43,5 +41,5 @@ class KafkaMonitorActor(zookeeperUrl: String, port: Int, topicName: Option[Strin
     case TopicStatsFailure(_, th) => println(th)
   }
 
-  def log(str: String): Unit = log.debug(str)
+  def logDebug(str: String): Unit = log.debug(str)
 }

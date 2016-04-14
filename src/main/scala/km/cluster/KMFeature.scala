@@ -1,11 +1,11 @@
-package cluster
+package km.cluster
 
 /**
  * Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
  * See accompanying LICENSE file.
  */
 import grizzled.slf4j.Logging
-import model.{ClusterConfig, Kafka_0_8_1_1}
+import km.model.{ClusterConfig, Kafka_0_8_1_1}
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
