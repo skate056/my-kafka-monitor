@@ -29,27 +29,13 @@ class KafkaJMXActor(hosts: Seq[String], port: Int) extends Actor with ActorLoggi
       }
   }
 
-  def mergeResults(results: Seq[Try[MeterMetric]]): Either[MeterMetric, Throwable] = {
+  private def mergeResults(results: Seq[Try[MeterMetric]]): Either[MeterMetric, Throwable] = {
     val ZERO: Either[MeterMetric, Throwable] = Left(MeterMetric(0, 0, 0, 0, 0))
-    val mergedMetrics: Either[MeterMetric, Throwable] = results.foldLeft(ZERO) {
-      //case (result, current) =>
+    results.foldLeft(ZERO) {
       case (result@Right(_), _) => result
       case (result, Success(mm)) => result.left.map(add(_, mm))
       case (result, Failure(th)) => Right(th)
-      //        if (result.isRight)
-      //          result
-      //        else {
-      //          current match {
-      //            case Success(mm) =>
-      //              result.left.map(add(_, mm))
-      //            case Failure(th) =>
-      //              Right(th)
-      //          }
-      //        }
     }
-    //              val ts = TopicStatsSucces(topicName, mm)
-    //              val tf = TopicStatsFailure(topicName, th)
-    mergedMetrics
   }
 
   def add(a: MeterMetric, b: MeterMetric): MeterMetric = {
