@@ -3,12 +3,11 @@ import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 import java.util.concurrent.TimeUnit.SECONDS
 
-import akka.actor.Actor
-import jmx.{KafkaJMX, KafkaMetrics, MeterMetric}
+import akka.actor.{Actor, Props}
+import jmx.MeterMetric
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
 
 case object InitMonitor
 
@@ -16,7 +15,7 @@ case object RefreshStats
 
 case object Done
 
-class MonitorActor extends Actor {
+class MonitorActor(host: String, port: Int, topicName: String = "") extends Actor {
   val oneSec: FiniteDuration = FiniteDuration(1, SECONDS)
   implicit val ec = ExecutionContext.Implicits.global
 
@@ -33,22 +32,17 @@ class MonitorActor extends Actor {
     .appendValue(SECOND_OF_MINUTE, 2)
     .toFormatter()
 
+  val jmxProps = Props(classOf[KafkaJMXActor], host, port)
+  val jmxActor = context.actorOf(jmxProps)
+
   override def receive: Receive = {
     case InitMonitor =>
       context.system.scheduler.schedule(oneSec, oneSec) {
         self ! RefreshStats
       }
-    case RefreshStats =>
-      val version = model.Kafka_0_9_0_0
-      val result = KafkaJMX.doWithConnection("localhost", 9997, None, None) {
-        mbsc => KafkaMetrics.getMessagesInPerSec(version, mbsc, Option("dp.hive.ukmap.raw"))
-      }
-      result match {
-        case Success(mm) =>
-          println(ts + formatMsg(mm))
-        case Failure(exc) =>
-          println(exc)
-      }
+    case RefreshStats => jmxActor ! FetchStats(topicName)
+    case TopicStatsSucces(_, mm) => println(ts + formatMsg(mm))
+    case TopicStatsFailure(_, th) => println(th)
   }
 
   def formatMsg(mm: MeterMetric): String = {
