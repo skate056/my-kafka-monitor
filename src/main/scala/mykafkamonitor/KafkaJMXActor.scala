@@ -1,7 +1,7 @@
 package mykafkamonitor
 
 import akka.actor.{Actor, ActorLogging}
-import km.jmx.{KafkaMetrics, KafkaJMX, MeterMetric}
+import km.jmx.{KafkaJMX, KafkaMetrics, MeterMetric}
 
 import scala.util.{Failure, Success, Try}
 

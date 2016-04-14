@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
+import scala.collection._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
@@ -21,7 +22,10 @@ class KafkaMonitorActor(zookeeperUrl: String, port: Int, topicName: Option[Strin
   val clusterActor = context.actorOf(clusterProps)
 
   var jmxActor: ActorRef = null
-  var printer: ActorRef = context.actorOf(Props[StatsPrinterActor])
+  var offsetActor: ActorRef = null
+  val printer: ActorRef = context.actorOf(Props[StatsPrinterActor])
+
+  val publishRate: mutable.Map[String, Long] = mutable.Map()
 
   override def receive: Receive = {
     case InitMonitor =>
@@ -32,13 +36,22 @@ class KafkaMonitorActor(zookeeperUrl: String, port: Int, topicName: Option[Strin
       val jmxProps = Props(classOf[KafkaJMXActor], brokers, port)
       jmxActor = context.actorOf(jmxProps)
 
+      val offsetProps = Props(classOf[MessageRateActor], brokers, port)
+      offsetActor = context.actorOf(offsetProps)
+
       logDebug(s"Setting up with $brokers:$port for topic $topicName")
       context.system.scheduler.schedule(oneSec, oneSec) {
         self ! RefreshStats
       }
-    case RefreshStats => jmxActor ! FetchStats(topicName)
-    case tss@TopicStatsSuccess(_, _) => printer ! tss
+    case RefreshStats =>
+      jmxActor ! FetchStats(topicName)
+      topicName.foreach(offsetActor ! GetPublishRate(_))
+    case tss@TopicStatsSuccess(_, _) =>
+      tss.topicName
+        .map { t => Stats(t, tss.meterMetric, publishRate(t)) }
+        .foreach(printer ! _)
     case TopicStatsFailure(_, th) => println(th)
+    case PublishRateResponse(t, rate) => publishRate.update(t, rate)
   }
 
   def logDebug(str: String): Unit = log.debug(str)
