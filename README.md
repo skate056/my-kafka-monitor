@@ -3,3 +3,10 @@ A top style utility to monitor Kafka from the command line. It displays the curr
 last five minute rate, last fifteen minute rate and the mean message rate of the specified topic.
 
 In the current version only one topic can be monitored.
+
+# Usage
+## Build
+`sbt clean assembly`
+
+## Running
+`java -cp my-kafka-monitor.jar MonitorApp [zookeeperUrl] [kafkaJMXPort] [topicName]`
