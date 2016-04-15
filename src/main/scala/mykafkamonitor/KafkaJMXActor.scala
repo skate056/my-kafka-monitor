@@ -35,17 +35,8 @@ class KafkaJMXActor(hosts: Seq[String], port: Int) extends Actor with ActorLoggi
     val ZERO: Either[MeterMetric, Throwable] = Left(MeterMetric(0, 0, 0, 0, 0))
     results.foldLeft(ZERO) {
       case (result@Right(_), _) => result
-      case (result, Success(mm)) => result.left.map(add(_, mm))
+      case (result, Success(mm)) => result.left.map(_ + mm)
       case (result, Failure(th)) => Right(th)
     }
-  }
-
-  def add(a: MeterMetric, b: MeterMetric): MeterMetric = {
-    MeterMetric(
-      a.count + b.count,
-      a.fifteenMinuteRate + b.fifteenMinuteRate,
-      a.fiveMinuteRate + b.fiveMinuteRate,
-      a.oneMinuteRate + b.oneMinuteRate,
-      a.meanRate + b.meanRate)
   }
 }
