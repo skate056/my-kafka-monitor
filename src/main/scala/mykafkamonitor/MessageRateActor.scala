@@ -34,6 +34,7 @@ class MessageRateActor(hosts: Seq[String], port: Int) extends Actor with ActorLo
       val prev = prevOffset.getOrElse(topicName, 0L)
       val rate = sumOfOffsets - prev
       prevOffset(topicName) = sumOfOffsets
+      log.debug(s"Rate = $rate")
 
       sender() ! PublishRateResponse(topicName, rate)
   }
