@@ -10,7 +10,7 @@ import km.jmx.MeterMetric
 case class Stats(topicName: String, meterMetric: MeterMetric, publishRate: Option[Long])
 
 class StatsPrinterActor extends Actor {
-  val delimiter = "\t"
+  val Delimiter = "\t"
 
   val formatter = DateTimeFormatter.ISO_DATE_TIME
   val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -30,7 +30,7 @@ class StatsPrinterActor extends Actor {
   }
 
   def formatMsg(mm: MeterMetric, rate: Option[Long] = Option.empty): String = {
-    s"$delimiter offsetSum=${mm.count} $delimiter ${rate.map(_ + delimiter).getOrElse("")} 1m=${mm.formatOneMinuteRate} $delimiter 5m=${mm.formatFiveMinuteRate} $delimiter 15m=${mm.formatFifteenMinuteRate}"
+    s"$Delimiter ${rate.map(_ + Delimiter + "m/s").getOrElse("")} 1m=${mm.formatOneMinuteRate} $Delimiter 5m=${mm.formatFiveMinuteRate} $Delimiter 15m=${mm.formatFifteenMinuteRate}"
   }
 
   def ts: String = {

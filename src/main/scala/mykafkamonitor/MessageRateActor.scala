@@ -1,55 +1,62 @@
 package mykafkamonitor
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import kafka.api._
 import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer
+
 import scala.collection._
 
 case class GetPublishRate(topicName: String)
 
 case class PublishRateResponse(topicName: String, rate: Long)
 
-class MessageRateActor(hosts: Seq[String], port: Int) extends Actor {
+class MessageRateActor(hosts: Seq[String], port: Int) extends Actor with ActorLogging {
+
   import KafkaConf._
-  val prevOffset:mutable.Map[String, Long] = mutable.Map()
+
+  val prevOffset: mutable.Map[String, Long] = mutable.Map()
 
   override def receive: Receive = {
     case GetPublishRate(topicName) =>
-      val sumOffsets = hosts.map { host =>
+      val offsetsByHosts = hosts.map { host =>
         val consumer = new SimpleConsumer(host, DefaultPort, SocketTimeout, SocketTimeout, ClientId)
-        val topicMetadataRequest = new TopicMetadataRequest(Seq(topicName), 1)
-        val response = consumer.send(topicMetadataRequest)
-        val topicMetadata = response.topicsMetadata.find(_.topic == topicName)
-        val partitionMetadata = topicMetadata.map(_.partitionsMetadata).toSeq.flatten
-//        println(s"Topic $topicName has ${partitionMetadata.size} partitions")
+        val partitionMetadata = fetchPartitionMetadata(topicName, consumer)
 
-        val time = -1
-        val nOffsets = 1
-        val pori = new PartitionOffsetRequestInfo(time, nOffsets)
-        val topicAndPart = partitionMetadata
-          .map(x => TopicAndPartition(topicName,x.partitionId))
-          .map((_, pori))
-          .toMap
-        val offsetFetchRequest = new OffsetRequest(topicAndPart)
-        val offResp = consumer.getOffsetsBefore(offsetFetchRequest)
-        val offsets = offResp.partitionErrorAndOffsets
-//        offsets.foreach { case (tp, por) =>
-//          if (tp.partition == 50)
-//            println(tp + " = " + por)
-//        }
-
+        val offsets = fetchLatestOffsets(topicName, consumer, partitionMetadata)
         val sum = offsets.values.map(_.offsets).toSeq.flatten.sum
-//        println(s"sum = $sum")
+        log.debug(s"Sum of offsets from $host = $sum")
+        consumer.close()
         sum
       }
 
-      val bigSum = sumOffsets.sum
+      val sumOfOffsets = offsetsByHosts.sum
       val prev = prevOffset.getOrElse(topicName, 0L)
-      val rate = bigSum - prev
-//      println(s"rate = $rate")
-      prevOffset(topicName) = bigSum
+      val rate = sumOfOffsets - prev
+      prevOffset(topicName) = sumOfOffsets
 
       sender() ! PublishRateResponse(topicName, rate)
+  }
+
+  def fetchLatestOffsets(topicName: String, consumer: SimpleConsumer, partitionMetadata: scala.Seq[PartitionMetadata]): Map[TopicAndPartition, PartitionOffsetsResponse] = {
+    val time = -1
+    val nOffsets = 1
+    val offsetRequestInfo = new PartitionOffsetRequestInfo(time, nOffsets)
+    val topicAndPartition = partitionMetadata
+      .map(x => TopicAndPartition(topicName, x.partitionId))
+      .map((_, offsetRequestInfo))
+      .toMap
+    val offsetFetchRequest = new OffsetRequest(topicAndPartition)
+    val offResp = consumer.getOffsetsBefore(offsetFetchRequest)
+    offResp.partitionErrorAndOffsets
+  }
+
+  def fetchPartitionMetadata(topicName: String, consumer: SimpleConsumer): scala.Seq[PartitionMetadata] = {
+    val topicMetadataRequest = new TopicMetadataRequest(Seq(topicName), 1)
+    val response = consumer.send(topicMetadataRequest)
+    val topicMetadata = response.topicsMetadata.find(_.topic == topicName)
+    val partitionMetadata = topicMetadata.map(_.partitionsMetadata).toSeq.flatten
+    log.debug(s"Topic $topicName has ${partitionMetadata.size} partitions")
+    partitionMetadata
   }
 }
