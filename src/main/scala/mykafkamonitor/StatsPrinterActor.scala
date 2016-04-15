@@ -7,7 +7,7 @@ import java.time.temporal.ChronoField._
 import akka.actor.Actor
 import km.jmx.MeterMetric
 
-case class Stats(topicName: String, meterMetric: MeterMetric, publishRate: Long)
+case class Stats(topicName: String, meterMetric: MeterMetric, publishRate: Option[Long])
 
 class StatsPrinterActor extends Actor {
   val delimiter = "\t"
@@ -26,7 +26,7 @@ class StatsPrinterActor extends Actor {
 
   override def receive: Receive = {
     case TopicStatsSuccess(_, mm) => println(ts + formatMsg(mm))
-    case Stats(_, mm, rate) => println(ts + formatMsg(mm, Option(rate)))
+    case Stats(_, mm, rate) => println(ts + formatMsg(mm, rate))
   }
 
   def formatMsg(mm: MeterMetric, rate: Option[Long] = Option.empty): String = {

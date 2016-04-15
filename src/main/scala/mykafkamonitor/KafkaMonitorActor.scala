@@ -48,7 +48,7 @@ class KafkaMonitorActor(zookeeperUrl: String, port: Int, topicName: Option[Strin
       topicName.foreach(offsetActor ! GetPublishRate(_))
     case tss@TopicStatsSuccess(_, _) =>
       tss.topicName
-        .map { t => Stats(t, tss.meterMetric, publishRate(t)) }
+        .map { t => Stats(t, tss.meterMetric, publishRate.get(t)) }
         .foreach(printer ! _)
     case TopicStatsFailure(_, th) => println(th)
     case PublishRateResponse(t, rate) => publishRate.update(t, rate)
